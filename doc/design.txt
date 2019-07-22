@@ -1,0 +1,10 @@
+[HTML canvas]
+* lineTo, arc, fillStyle... (canvas space)
+
+[Dots Grid Board]
+- points, areas, pointers (in a grid space)
+* draw
+
+[The Dots Game Engine]
+- game state (points and areas)
+- UI state (pointer, area input, animation)
