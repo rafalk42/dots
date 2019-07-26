@@ -10,6 +10,7 @@ function DotsGame(board, gameSettings, style)
 	{
 		var stats = {};
 		
+		stats.inputMode = this.state.inputMode;
 		stats.playerCount = this.gameSettings.playerCount;
 		stats.playerCurrent = this.state.playerCurrent;
 		stats.player = [];
@@ -59,12 +60,18 @@ function DotsGame(board, gameSettings, style)
 			y: this.pointerCoordinates.y,
 		};
 		
-		this.gameDotPut(coordinates);
+		this.gameOnDotClick(coordinates);
 		this.boardDraw();
 	}
 	
 	this.onMouseUp = function()
 	{
+	}
+
+	this.inputModeToggle = function()
+	{
+		this.gameInputModeToggle();
+		this.boardDraw();
 	}
 	
 	this.boardDraw = function()
@@ -75,10 +82,31 @@ function DotsGame(board, gameSettings, style)
 		
 		for (p=0; p<this.gameSettings.playerCount; p++)
 		{
-			for (i=0; i<this.state.players[p].dots.length; i++)
+			var player = this.state.players[p];
+			for (i=0; i<player.dots.length; i++)
 			{
-				var dot = this.state.players[p].dots[i];
+				var dot = player.dots[i];
 				points.push(dot);
+			}
+
+			for (i=0; i<player.areas.length; i++)
+			{
+				var playerArea = player.areas[i];
+				var vertices = [];
+				for (j=0; j<playerArea.length; j++)
+				{
+					vertices.push(
+					{
+						x: playerArea[j].x,
+						y: playerArea[j].y
+					});
+				}
+				areas.push(
+				{
+					lineColor: this.style.playerColor[p],
+					fillColor: this.style.playerColor[p],
+					vertices: vertices
+				});
 			}
 		}
 		
@@ -103,6 +131,26 @@ function DotsGame(board, gameSettings, style)
 				c: color
 			});
 		}
+
+		if (this.state.areaDraft.length > 0)
+		{
+			var vertices = [];
+			for (i=0; i<this.state.areaDraft.length; i++)
+			{
+				var area = this.state.areaDraft[i];
+				vertices.push(
+				{
+					x: area.x,
+					y: area.y
+				});
+			}
+			areas.push(
+			{
+				lineColor: "#808080",
+				fillColor: this.style.playerColor[this.state.playerCurrent],
+				vertices: vertices
+			});
+		}
 		
 		this.board.draw(points, areas, pointers);
 	}
@@ -110,6 +158,7 @@ function DotsGame(board, gameSettings, style)
 	
 // PRIVATE
 
+	// GAME STATE
 	this.gameReset = function()
 	{
 		var state = 
@@ -144,7 +193,28 @@ function DotsGame(board, gameSettings, style)
 		return JSON.parse(JSON.stringify(this.state));
 	}
 	
+	// GAME LOGIC
+	this.gameOnDotClick = function(coordinates)
+	{
+		switch (this.state.inputMode)
+		{
+			// dot placing
+			case 0:
+				this.gameDotPut(coordinates);
+				break;
+			// base drawing
+			case 1:
+				this.gameBaseFencePut(coordinates);
+				break;
+		}
+	}
+
 	this.gameIsDotThere = function(coordinates)
+	{
+		return this.gameDotGetPlayerIndex(coordinates) !== undefined;
+	}
+
+	this.gameDotGetPlayerIndex = function(coordinates)
 	{
 		for (p=0; p<this.gameSettings.playerCount; p++)
 		{
@@ -154,69 +224,125 @@ function DotsGame(board, gameSettings, style)
 				if (dot.x == coordinates.x
 					&& dot.y == coordinates.y)
 				{
-					return true;
+					return p;
 				}
 			}
 		}
 		
-		return false;
+		return undefined;
+	}
+
+	this.gameFenceTempGetVertexIndex = function(coordinates)
+	{
+		for (i=0; i<this.state.areaDraft.length; i++)
+		{
+			var vertex = this.state.areaDraft[i];
+			if (vertex.x == coordinates.x
+				&& vertex.y == coordinates.y)
+			{
+				return i;
+			}
+		}
+
+		return undefined;
 	}
 	
 	// put a dot for current player and advance to the next one
 	this.gameDotPut = function(coordinates)
 	{
-		var state = this.gameStateCopy();
-		
-		if (state.inputMode == 0)
+		// check if this spot is free, ignore if it isn't
+		if (this.gameIsDotThere(coordinates))
 		{
-			// check if this spot is free
-			if (this.gameIsDotThere(coordinates))
-			{
-				console.log("Dot already there");
-				state.inputMode = 1 - state.inputMode;
-				state.areaDraft.push(coordinates);
-				
-				this.gameStateUpdate(state);
-				
-				return;
-			}
+			console.log("Dot already there");
 			
-			// actually add the dot to current player's list of dots
-			state.players[state.playerCurrent].dots.push(
-			{
-				x: coordinates.x,
-				y: coordinates.y,
-				c: this.style.playerColor[state.playerCurrent]
-			});
-			
-			// go to the next player
-			if (++state.playerCurrent >= this.gameSettings.playerCount)
-			{
-				state.playerCurrent = 0;
-			}
-			
-			this.gameStateUpdate(state);
+			return;
+		}
+		
+		this.gamePlayerDotAdd(coordinates, this.state.playerCurrent);
+		this.gamePlayerNext();
+	}
+
+	this.gameBaseFencePut = function(coordinates)
+	{
+		// ignore inputs on other players dots
+		if (this.gameDotGetPlayerIndex(coordinates) !== this.state.playerCurrent)
+		{
+			return;
+		}
+
+		var fenceVertexIndex = this.gameFenceTempGetVertexIndex(coordinates);
+
+		// dot that is not part of the fence yet
+		if (fenceVertexIndex === undefined)
+		{
+			// TODO: add checks for proximity to previous fence dot
+			this.gameFenceTempAdd(coordinates, this.state.playerCurrent);
+		}
+		// the origin dot
+		else if (fenceVertexIndex == 0)
+		{
+			// commit this temp fence as current players base
+			this.gameFenceTempCommit(this.state.playerCurrent);
 		}
 		else
 		{
-			if (this.gameIsDotThere(coordinates))
-			{
-				console.log("Dot already there");
-				state.inputMode = 1 - state.inputMode;
-				state.areaDraft = [];
-
-				this.gameStateUpdate(state);
-				
-				return;
-			}
-			
-			state.areaDraft.push(coordinates);
-			
-			this.gameStateUpdate(state);
+			// ignore :)
 		}
 	}
 
+	this.gamePlayerDotAdd = function(coordinates, playerIndex)
+	{
+		var state = this.gameStateCopy();
+		state.players[playerIndex].dots.push(
+		{
+			x: coordinates.x,
+			y: coordinates.y,
+			c: this.style.playerColor[playerIndex]
+		});
+		this.gameStateUpdate(state);
+	}
+
+	this.gameFenceTempAdd = function(coordinates, playerIndex)
+	{
+		var state = this.gameStateCopy();
+		state.areaDraft.push(
+		{
+			x: coordinates.x,
+			y: coordinates.y
+		});
+		this.gameStateUpdate(state);
+	}
+
+	this.gameFenceTempCommit = function(playerIndex)
+	{
+		var state = this.gameStateCopy();
+		state.players[playerIndex].areas.push(
+			state.areaDraft
+		);
+		state.areaDraft = [];
+		this.gameStateUpdate(state);
+	}
+
+	this.gamePlayerNext = function()
+	{
+		var state = this.gameStateCopy();
+		if (++state.playerCurrent >= this.gameSettings.playerCount)
+		{
+			state.playerCurrent = 0;
+		}
+		this.gameStateUpdate(state);
+	}
+
+	this.gameInputModeToggle = function()
+	{
+		var state = this.gameStateCopy();
+		state.inputMode = 1 - state.inputMode;
+		state.areaDraft = [];
+		this.gameStateUpdate(state);
+	}
+
+	// Initialize the state and draw
 	this.state = this.gameReset();	
-	console.log(this.state);
+	// console.log(this.state);
 	this.boardDraw();
 }

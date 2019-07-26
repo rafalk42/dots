@@ -89,21 +89,6 @@ function DotsGridBoard(canvas, board, style)
 			var area = areas[i];
 			var vertices = area.vertices;
 			
-			can.strokeStyle = area.lineColor;
-			can.moveTo(vertices[0].x, vertices[0].y);
-			can.beginPath();			
-			for (j=0; j<vertices.length; j++)
-			{
-				var vertex = vertices[j];
-				
-				var x = vertex.x * this.board.gridSpacing;
-				var y = vertex.y * this.board.gridSpacing;
-				
-				can.lineTo(x, y);
-			}
-			can.closePath();
-			can.stroke();
-			
 			can.globalAlpha = this.style.alpha;
 			can.fillStyle = area.fillColor;
 			can.moveTo(vertices[0].x, vertices[0].y);
@@ -120,6 +105,21 @@ function DotsGridBoard(canvas, board, style)
 			can.closePath();
 			can.fill();
 			can.globalAlpha = 1.0;
+			
+			can.strokeStyle = area.lineColor;
+			can.moveTo(vertices[0].x, vertices[0].y);
+			can.beginPath();			
+			for (j=0; j<vertices.length; j++)
+			{
+				var vertex = vertices[j];
+				
+				var x = vertex.x * this.board.gridSpacing;
+				var y = vertex.y * this.board.gridSpacing;
+				
+				can.lineTo(x, y);
+			}
+			can.closePath();
+			can.stroke();
 		}
 	}
 	

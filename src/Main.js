@@ -6,16 +6,16 @@ function BodyOnLoad()
 {
 	console.log("Body on load!");
 
-	canvasElement = document.getElementById('board');
+	canvasElement = document.getElementById("board");
 	if (!canvasElement.getContext)
 	{
 		console.log("Fatal error: couldn't get the canvas element");
 		return;
 	}
-	canvasElement.addEventListener('mousemove', onMouseMove);
-	canvasElement.addEventListener('mouseleave', onMouseLeave);
-	canvasElement.addEventListener('mousedown', onMouseDown);
-	canvasElement.addEventListener('mouseup', onMouseUp);
+	canvasElement.addEventListener("mousemove", onMouseMove);
+	canvasElement.addEventListener("mouseleave", onMouseLeave);
+	canvasElement.addEventListener("mousedown", onMouseDown);
+	canvasElement.addEventListener("mouseup", onMouseUp);
 
 	var canvas =
 	{
@@ -56,6 +56,9 @@ function BodyOnLoad()
 	board = new DotsGridBoard(canvas, board, boardStyle);
 	game = new DotsGame(board, gameSettings, gameStyle);
 	game.registerStateChangeHandler(onGameStateChange);
+
+	inputModeButtonElement = document.getElementById("inputModeButton");
+	inputModeButtonElement.addEventListener("click", onInputModeClick);
 	
 	updateInfo();
 }
@@ -79,7 +82,7 @@ function updateInfo()
 
 	statsElement.textContent = text;
 	
-	playerCurrentElement.textContent = "Player " + (stats.playerCurrent + 1);
+	playerCurrentElement.textContent = "Player " + (stats.playerCurrent + 1) + " " + (stats.inputMode == 0 ? "DOTS" : "BASES");
 	playerCurrentElement.style.color = stats.player[stats.playerCurrent].dotColor;
 }
 
@@ -99,10 +102,22 @@ function onMouseLeave(event)
 
 function onMouseDown(event)
 {
+	// ignore any button other than 0 - left/primary button
+	// https://w3c.github.io/uievents/#dom-mouseevent-button
+	if (event.button !== 0)
+	{
+		return;
+	}
+
 	game.onMouseDown();
 }
 
 function onMouseUp(event)
 {
 	game.onMouseUp();
+}
+
+function onInputModeClick(event)
+{
+	game.inputModeToggle();
 }
