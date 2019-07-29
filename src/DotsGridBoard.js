@@ -105,7 +105,17 @@ function DotsGridBoard(canvas, board, style)
 			can.closePath();
 			can.fill();
 			can.globalAlpha = 1.0;
-			
+
+			// if (vertices.length == 1)
+			{
+				can.beginPath();
+				can.fillStyle = area.lineColor;
+				can.arc(vertices[0].x * this.board.gridSpacing,
+					vertices[0].y * this.board.gridSpacing,
+					3, 0, 2 * Math.PI);
+				can.fill();
+			}
+
 			can.strokeStyle = area.lineColor;
 			can.moveTo(vertices[0].x, vertices[0].y);
 			can.beginPath();			

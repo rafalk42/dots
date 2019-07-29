@@ -60,6 +60,11 @@ function BodyOnLoad()
 	inputModeButtonElement = document.getElementById("inputModeButton");
 	inputModeButtonElement.addEventListener("click", onInputModeClick);
 	
+	endTurnButtonElement = document.getElementById("endTurnButton");
+	endTurnButtonElement.addEventListener("click", onEndTurnClick);
+
+	window.addEventListener("keypress", onKeyPress);
+	
 	updateInfo();
 }
 
@@ -82,7 +87,9 @@ function updateInfo()
 
 	statsElement.textContent = text;
 	
-	playerCurrentElement.textContent = "Player " + (stats.playerCurrent + 1) + " " + (stats.inputMode == 0 ? "DOTS" : "BASES");
+	playerCurrentElement.textContent = "Player " + (stats.playerCurrent + 1) 
+		+ " " + (stats.inputMode == 0 ? "DOTS" : "BASES")
+		+ " [" + stats.player[stats.playerCurrent].dotsLeft + "]";
 	playerCurrentElement.style.color = stats.player[stats.playerCurrent].dotColor;
 }
 
@@ -120,4 +127,23 @@ function onMouseUp(event)
 function onInputModeClick(event)
 {
 	game.inputModeToggle();
+}
+
+function onEndTurnClick(event)
+{
+	game.endTurn();
+}
+
+function onKeyPress(event)
+{
+	switch (event.key)
+	{
+		case "e":
+			game.endTurn();
+			break;
+		
+		case "t":
+			game.inputModeToggle();
+			break;
+	}
 }

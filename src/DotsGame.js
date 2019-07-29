@@ -20,7 +20,8 @@ function DotsGame(board, gameSettings, style)
 			stats.player.push(
 			{
 				dotColor: this.style.playerColor[p],
-				dotCount: dotCount
+				dotCount: dotCount,
+				dotsLeft: this.state.players[p].dotsLeft
 			});
 		}
 		
@@ -50,11 +51,18 @@ function DotsGame(board, gameSettings, style)
 		{
 			this.pointerCoordinates = undefined;
 		}
+
 		this.boardDraw();
 	}
 	
 	this.onMouseDown = function()
 	{
+		// ignore mouse down outside playing area
+		if (this.pointerCoordinates === undefined)
+		{
+			return;
+		}
+
 		var coordinates = {
 			x: this.pointerCoordinates.x,
 			y: this.pointerCoordinates.y,
@@ -74,6 +82,12 @@ function DotsGame(board, gameSettings, style)
 		this.boardDraw();
 	}
 	
+	this.endTurn = function()
+	{
+		this.gamePlayerNext();
+		this.boardDraw();
+	}
+	
 	this.boardDraw = function()
 	{
 		var points = [];
@@ -86,6 +100,7 @@ function DotsGame(board, gameSettings, style)
 			for (i=0; i<player.dots.length; i++)
 			{
 				var dot = player.dots[i];
+				dot.c = this.style.playerColor[p];
 				points.push(dot);
 			}
 
@@ -120,7 +135,7 @@ function DotsGame(board, gameSettings, style)
 					color = "#ff6a00";
 					break;
 				case 1:
-					color = "#006aff";
+					color = "#00ff6a";
 					break;
 			}
 			
@@ -173,11 +188,52 @@ function DotsGame(board, gameSettings, style)
 		{
 			state.players.push(
 			{
+				dotsLeft: 1,
 				dots: [],
 				areas: []
 			});
 		}
+
+		// FOR DEBUG PURPOSES!!!
+		state.players[0].dots.push({x:1, y:1});
+		state.players[0].dots.push({x:1, y:3});
+		state.players[0].dots.push({x:1, y:5});
+		state.players[0].dots.push({x:1, y:7});
+		state.players[0].dots.push({x:1, y:9});
+		state.players[0].dots.push({x:2, y:2});
+		state.players[0].dots.push({x:2, y:4});
+		state.players[0].dots.push({x:2, y:6});
+		state.players[0].dots.push({x:2, y:8});
+		state.players[0].dots.push({x:3, y:1});
+		state.players[0].dots.push({x:3, y:3});
+		state.players[0].dots.push({x:3, y:5});
+		state.players[0].dots.push({x:3, y:7});
+		state.players[0].dots.push({x:3, y:9});
+		state.players[0].dots.push({x:4, y:2});
+		state.players[0].dots.push({x:4, y:4});
+		state.players[0].dots.push({x:4, y:6});
+		state.players[0].dots.push({x:4, y:8});
 		
+		state.players[1].dots.push({x:4, y:1});
+		state.players[1].dots.push({x:4, y:3});
+		state.players[1].dots.push({x:4, y:5});
+		state.players[1].dots.push({x:4, y:7});
+		state.players[1].dots.push({x:4, y:9});
+		state.players[1].dots.push({x:3, y:2});
+		state.players[1].dots.push({x:3, y:4});
+		state.players[1].dots.push({x:3, y:6});
+		state.players[1].dots.push({x:3, y:8});
+		state.players[1].dots.push({x:2, y:1});
+		state.players[1].dots.push({x:2, y:3});
+		state.players[1].dots.push({x:2, y:5});
+		state.players[1].dots.push({x:2, y:7});
+		state.players[1].dots.push({x:2, y:9});
+		state.players[1].dots.push({x:1, y:2});
+		state.players[1].dots.push({x:1, y:4});
+		state.players[1].dots.push({x:1, y:6});
+		state.players[1].dots.push({x:1, y:8});
+		
+
 		return state;
 	}
 	
@@ -214,6 +270,11 @@ function DotsGame(board, gameSettings, style)
 		return this.gameDotGetPlayerIndex(coordinates) !== undefined;
 	}
 
+	this.gameDotsLeft = function(playerIndex)
+	{
+		return this.state.players[playerIndex].dotsLeft;
+	}
+
 	this.gameDotGetPlayerIndex = function(coordinates)
 	{
 		for (p=0; p<this.gameSettings.playerCount; p++)
@@ -246,6 +307,45 @@ function DotsGame(board, gameSettings, style)
 
 		return undefined;
 	}
+
+	this.gameFenceIsValidLocation = function(coordinates, playerIndex)
+	{
+		// CHECK: proximity from previous
+		// first post is not restricted
+		if (this.state.areaDraft.length == 0)
+		{
+			return true;
+		}
+		// get last placed post
+		var vertex = this.state.areaDraft[this.state.areaDraft.length - 1];
+		// check the distance between previous and the next (attempted) post
+		if (this.gameFenceDistance(coordinates, vertex) != 1)
+		{
+			return false;
+		}
+
+		// for (i=0; i<this.state.areaDraft.length; i++)
+		// CHECK: 
+		return true;
+	}
+
+	this.gameFenceIsValid = function()
+	{
+		if (this.state.areaDraft.length < 4)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	this.gameFenceDistance = function(coordinatesA, coordinatesB)
+	{
+		var distanceX = Math.abs(coordinatesA.x - coordinatesB.x);
+		var distanceY = Math.abs(coordinatesA.y - coordinatesB.y);
+
+		return Math.max(distanceX, distanceY);
+	}
 	
 	// put a dot for current player and advance to the next one
 	this.gameDotPut = function(coordinates)
@@ -257,9 +357,15 @@ function DotsGame(board, gameSettings, style)
 			
 			return;
 		}
+
+		if (this.gameDotsLeft(this.state.playerCurrent) <= 0)
+		{
+			console.log("Not dots left for player " + this.state.playerCurrent);
+
+			return;
+		}
 		
 		this.gamePlayerDotAdd(coordinates, this.state.playerCurrent);
-		this.gamePlayerNext();
 	}
 
 	this.gameBaseFencePut = function(coordinates)
@@ -276,17 +382,26 @@ function DotsGame(board, gameSettings, style)
 		if (fenceVertexIndex === undefined)
 		{
 			// TODO: add checks for proximity to previous fence dot
-			this.gameFenceTempAdd(coordinates, this.state.playerCurrent);
+			if (this.gameFenceIsValidLocation(coordinates, this.state.playerCurrent))
+			{
+				this.gameFenceTempAdd(coordinates);
+			}
 		}
 		// the origin dot
 		else if (fenceVertexIndex == 0)
 		{
-			// commit this temp fence as current players base
-			this.gameFenceTempCommit(this.state.playerCurrent);
+			if (this.gameFenceIsValidLocation(coordinates, this.state.playerCurrent)
+				&& this.gameFenceIsValid())
+			{
+				// commit this temp fence as current players base
+				this.gameFenceTempCommit(this.state.playerCurrent);
+				this.gamePlayerGrantDots(1, this.state.playerCurrent);
+			}
 		}
+		// dot that is a part of the fence
 		else
 		{
-			// ignore :)
+			this.gameFenceTempRevert(fenceVertexIndex);
 		}
 	}
 
@@ -296,13 +411,13 @@ function DotsGame(board, gameSettings, style)
 		state.players[playerIndex].dots.push(
 		{
 			x: coordinates.x,
-			y: coordinates.y,
-			c: this.style.playerColor[playerIndex]
+			y: coordinates.y
 		});
+		state.players[state.playerCurrent].dotsLeft--;
 		this.gameStateUpdate(state);
 	}
 
-	this.gameFenceTempAdd = function(coordinates, playerIndex)
+	this.gameFenceTempAdd = function(coordinates)
 	{
 		var state = this.gameStateCopy();
 		state.areaDraft.push(
@@ -312,7 +427,19 @@ function DotsGame(board, gameSettings, style)
 		});
 		this.gameStateUpdate(state);
 	}
-
+	
+	this.gameFenceTempRevert = function(fenceVertexIndex)
+	{
+		var state = this.gameStateCopy();
+		var areaDraft = [];
+		for (i=0; i<=fenceVertexIndex; i++)
+		{
+			areaDraft.push(state.areaDraft[i]);
+		}
+		state.areaDraft = areaDraft;
+		this.gameStateUpdate(state);
+	}
+	
 	this.gameFenceTempCommit = function(playerIndex)
 	{
 		var state = this.gameStateCopy();
@@ -330,6 +457,16 @@ function DotsGame(board, gameSettings, style)
 		{
 			state.playerCurrent = 0;
 		}
+		state.players[state.playerCurrent].dotsLeft = 1;
+		state.inputMode = 0;
+		state.areaDraft = [];
+		this.gameStateUpdate(state);
+	}
+
+	this.gamePlayerGrantDots = function(count, playerIndex)
+	{
+		var state = this.gameStateCopy();
+		state.players[state.playerCurrent].dotsLeft += count;
 		this.gameStateUpdate(state);
 	}
 
