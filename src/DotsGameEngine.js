@@ -193,31 +193,95 @@ function DotsGameEngine(settings)
 
 		// CHECK: proximity from previous
 		// first post is not restricted
-		if (this.state.fenceDraft.length == 0)
+		if (this.state.fenceDraft.length > 0)
 		{
-			return true;
+			// get last placed post
+			var vertexPrevious = this.state.fenceDraft[this.state.fenceDraft.length - 1];
+			// check the distance between previous and the next (attempted) post
+			var distance = this.gameFenceDistance(coordinates, vertexPrevious)
+			if (distance > 1)
+			{
+				console.log("Post at " + coordinates.x + "x" + coordinates.y +
+					" is too far (" + distance + ")");
+				return false;
+			}
 		}
 
-		// get last placed post
-		var vertexPrevious = this.state.fenceDraft[this.state.fenceDraft.length - 1];
-		// check the distance between previous and the next (attempted) post
-		var distance = this.gameFenceDistance(coordinates, vertexPrevious)
-		if (distance > 1)
+		// CHECK: dot is part a fence
+		var player = this.state.players[playerIndex];
+		for (i=0; i<player.areas.length; i++)
 		{
-			console.log("Post at " + coordinates.x + "x" + coordinates.y +
-				" is too far (" + distance + ")");
+			var playerArea = player.areas[i];
+			for (j=0; j<playerArea.length; j++)
+			{
+				var vertex = playerArea[j];
+				// if this dot is a part of player's fence, allow line through it
+				if (vertex.x == coordinates.x
+					&& vertex.y == coordinates.y)
+				{
+					return true;
+				}
+			}
+		}
+		
+		// CHECK: dot freedom
+		if (!this.gameDotIsFree(coordinates))
+		{
+			console.log("Dot at " + coordinates.x + "x" + coordinates.y +
+				" is not free");
 			return false;
 		}
-
-		// CHECK: dot freedom
-
 
 		return true;
 	}
 
-	this.gameDotIsFree = function()
+	this.gameDotIsFree = function(coordinates)
 	{
-		
+		for (p=0; p<this.settings.playerCount; p++)
+		{
+			var player = this.state.players[p];
+			for (i=0; i<player.areas.length; i++)
+			{
+				var playerArea = player.areas[i];
+				var polygon = [];
+				for (j=0; j<playerArea.length; j++)
+				{
+					var vertex = playerArea[j];
+					polygon.push([vertex.x, vertex.y]);
+				}
+
+				if (this.polygonPointInside([coordinates.x, coordinates.y], polygon))
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	// from: https://github.com/substack/point-in-polygon
+	// var polygon = [ [ 1, 1 ], [ 1, 2 ], [ 2, 2 ], [ 2, 1 ] ];
+    // inside([ 1.5, 1.5 ], polygon);
+	this.polygonPointInside = function (point, vs)
+	{
+		// ray-casting algorithm based on
+		// http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+
+		var x = point[0], y = point[1];
+
+		var inside = false;
+		for (var i = 0, j = vs.length - 1; i < vs.length; j = i++)
+		{
+			var xi = vs[i][0], yi = vs[i][1];
+			var xj = vs[j][0], yj = vs[j][1];
+
+			var intersect = ((yi > y) != (yj > y))
+				&& (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+			if (intersect) inside = !inside;
+		}
+
+		return inside;
 	}
 
 	this.gameFenceIsValid = function()
