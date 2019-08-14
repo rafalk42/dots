@@ -75,6 +75,10 @@ function DotsGridBoard(canvas, board, style)
 			can.fillStyle = point.c;
 			can.arc(x, y, this.style.dotSize, 0, 2 * Math.PI);
 			can.fill();
+			can.font = "10px consolas";
+			can.fillStyle = "#000000";
+			var text = "" + point.x + "," + point.y;
+			can.fillText(text, x - 8, y - 6, 16);
 		}
 	}
 	

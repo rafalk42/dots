@@ -54,7 +54,8 @@ function BodyOnLoad()
 	};
 
 	board = new DotsGridBoard(canvas, board, boardStyle);
-	game = new DotsGame(board, gameSettings, gameStyle);
+	engine = new DotsGameEngine(gameSettings);
+	game = new DotsGame(board, engine, gameStyle);
 	game.registerStateChangeHandler(onGameStateChange);
 
 	inputModeButtonElement = document.getElementById("inputModeButton");
