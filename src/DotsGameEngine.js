@@ -235,6 +235,20 @@ function DotsGameEngine(settings)
 		return true;
 	}
 
+	this.gameFenceIsValid = function(fence)
+	{
+		console.log(fence);
+		// CHECK: fence length of minimum 5 - the smallest possible base
+		if (fence.length < 5)
+		{
+			return false;
+		}
+		// get info about dots inside the base
+		// 
+
+		return true;
+	}
+
 	this.gameDotIsFree = function(coordinates)
 	{
 		for (p=0; p<this.settings.playerCount; p++)
@@ -263,6 +277,7 @@ function DotsGameEngine(settings)
 	// from: https://github.com/substack/point-in-polygon
 	// var polygon = [ [ 1, 1 ], [ 1, 2 ], [ 2, 2 ], [ 2, 1 ] ];
     // inside([ 1.5, 1.5 ], polygon);
+    // WARNING: result not valid when point is part of the polygon
 	this.polygonPointInside = function (point, vs)
 	{
 		// ray-casting algorithm based on
@@ -282,16 +297,6 @@ function DotsGameEngine(settings)
 		}
 
 		return inside;
-	}
-
-	this.gameFenceIsValid = function()
-	{
-		if (this.state.fenceDraft.length < 4)
-		{
-			return false;
-		}
-
-		return true;
 	}
 
 	this.gameFenceDistance = function(coordinatesA, coordinatesB)
@@ -338,12 +343,26 @@ function DotsGameEngine(settings)
 		// the origin dot
 		else if (fenceVertexIndex == 0)
 		{
-			if (this.gameFencePostIsValid(coordinates, this.state.playerCurrent)
-				&& this.gameFenceIsValid())
+			// grab the current state of fence
+			// and add final point to it
+			var fence = this.state.fenceDraft;
+			fence.push(
 			{
-				// commit this temp fence as current players base
-				this.gameFenceTempCommit(this.state.playerCurrent);
-				this.gamePlayerGrantDots(1, this.state.playerCurrent);
+				x: coordinates.x,
+				y: coordinates.y
+			});
+			if (this.gameFencePostIsValid(coordinates, this.state.playerCurrent))
+			{
+				if (this.gameFenceIsValid(fence))
+				{
+					// commit this temp fence as current players base
+					this.gameFenceTempCommit(this.state.playerCurrent);
+					this.gamePlayerGrantDots(1, this.state.playerCurrent);
+				}
+				else
+				{
+					console.log("Fence does not form a valid base");
+				}
 			}
 		}
 		// dot that is a part of the fence
