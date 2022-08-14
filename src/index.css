@@ -1,0 +1,22 @@
+body {
+    background-color: black;
+    color: silver;
+}
+
+canvas#board {
+    width: 200px;
+    height: 200px;
+}
+
+div#board {
+    background-color: white;
+}
+
+ol.menu {
+    list-style: none;
+}
+
+ol.menu li {
+    text-transform: uppercase;
+    cursor: pointer;
+}
