@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom/client';
 
 import './index.css';
-import TheDotsGame from './TheDotsGame';
+import TheDotsGame from './ui/TheDotsGame';
 
 
 const container = document.getElementById('root');

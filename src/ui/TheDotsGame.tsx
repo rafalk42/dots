@@ -26,6 +26,7 @@ export default class TheDotsGame extends Component<TheDotsGameProps, TheDotsGame
 
     handleClickSingle() {
         console.log("SINGLE")
+        this.setState({stage: State.GAME});
     }
 
     renderMenu(): ReactNode {
